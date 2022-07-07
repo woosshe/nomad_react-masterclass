@@ -25,19 +25,19 @@ interface IBoardProps {
 
 function Board({ toDos, boardId }: IBoardProps) {
   return (
-    <Droppable droppableId={boardId}>
-      {(magic) => {
-        return (
-          <Wrapper ref={magic.innerRef} {...magic.droppableProps}>
-            <Title>{boardId}</Title>
+    <Wrapper>
+      <Title>{boardId}</Title>
+      <Droppable droppableId={boardId}>
+        {(magic) => (
+          <div style={{ backgroundColor: "red" }} ref={magic.innerRef} {...magic.droppableProps}>
             {toDos.map((toDo, index) => (
-              <DraggableCard key={toDo} toDo={toDo} index={index} />
+              <DraggableCard key={toDo} index={index} toDo={toDo} />
             ))}
             {magic.placeholder}
-          </Wrapper>
-        );
-      }}
-    </Droppable>
+          </div>
+        )}
+      </Droppable>
+    </Wrapper>
   );
 }
 
