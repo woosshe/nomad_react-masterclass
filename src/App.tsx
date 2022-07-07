@@ -1,7 +1,7 @@
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { useRecoilState } from "recoil";
 import styled from "styled-components";
-import { IToDo, toDoState } from "./atoms";
+import { toDoState } from "./atoms";
 import Board from "./Components/Board";
 
 const Wrapper = styled.div`
@@ -24,26 +24,31 @@ const Boards = styled.div`
 function App() {
   const [toDos, setToDos] = useRecoilState(toDoState);
   const onDragEnd = (info: DropResult) => {
-    const { draggableId, destination: target, source } = info;
+    // const { draggableId, destination: target, source } = info;
+    const { destination: target, source } = info;
     if (!target) return;
     if (target.droppableId === source.droppableId) {
       // same board movement
       setToDos((allBoards) => {
-        const boardCopy = [...allBoards[source.droppableId]];
-        boardCopy.splice(source.index, 1);
-        boardCopy.splice(target.index, 0, draggableId);
+        const sourceBoard = [...allBoards[source.droppableId]];
+        //const taskObj = sourceBoard.find((board) => board.id + "" === draggableId) as IToDo;
+        const taskObj = sourceBoard[source.index];
+        sourceBoard.splice(source.index, 1);
+        sourceBoard.splice(target.index, 0, taskObj);
         return {
           ...allBoards,
-          [source.droppableId]: boardCopy,
+          [source.droppableId]: sourceBoard,
         };
       });
     } else {
       // cross board movement
       setToDos((allBoards) => {
         const sourceBoard = [...allBoards[source.droppableId]];
+        //const taskObj = sourceBoard.find((board) => board.id + "" === draggableId) as IToDo;
+        const taskObj = sourceBoard[source.index];
         const targetBoard = [...allBoards[target.droppableId]];
         sourceBoard.splice(source.index, 1);
-        targetBoard.splice(target.index, 0, draggableId);
+        targetBoard.splice(target.index, 0, taskObj);
         return {
           ...allBoards,
           [source.droppableId]: sourceBoard,
