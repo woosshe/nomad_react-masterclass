@@ -1,13 +1,14 @@
-import { Droppable } from "react-beautiful-dnd";
+import React from "react";
+import { Draggable, Droppable } from "react-beautiful-dnd";
 import { useForm } from "react-hook-form";
-import { useSetRecoilState } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import styled from "styled-components";
-import { IToDo, toDoState } from "../atoms";
+import { IToDo, toDoSelector } from "../atoms";
 import DraggableCard from "./DraggableCard";
 
 const Wrapper = styled.div`
   width: 300px;
-  padding: 10px 0px;
+  padding: 10px;
   padding-top: 10px;
   background-color: ${(props) => props.theme.boardColor};
   border-radius: 5px;
@@ -17,10 +18,25 @@ const Wrapper = styled.div`
 `;
 
 const Title = styled.h2`
-  text-align: center;
+  position: relative;
   font-weight: 600;
   margin-bottom: 10px;
   font-size: 18px;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 24px;
+  em {
+    position: absolute;
+    right: 10px;
+    top: 0;
+    height: 24px;
+    line-height: 24px;
+    cursor: pointer;
+    ::before {
+      content: "x";
+      font-weight: normal;
+    }
+  }
 `;
 
 interface IAreaProps {
@@ -30,20 +46,25 @@ interface IAreaProps {
 
 const Area = styled.div<IAreaProps>`
   background-color: ${(props) =>
-    props.isDraggingOver
-      ? "rgba(255, 255, 255, 0.5)"
-      : props.isDraggingFromThis
-      ? "rgba(0, 0, 0, 0.1)"
-      : "transparent"};
+    props.isDraggingOver ? "rgba(0, 0, 0, 0.1)" : props.isDraggingFromThis ? "transparent" : "transparent"};
   flex-grow: 1;
   transition: background-color 0.2s ease;
-  padding: 20px;
+  padding: 10px;
+  border-radius: 5px;
 `;
 
 const Form = styled.form`
   width: 100%;
   input {
-    width: 100%;
+    width: calc(100% - 20px);
+    box-sizing: border-box;
+    margin: 0 10px 10px 10px;
+    padding: 5px 10px;
+    border: solid 1px rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    :hover {
+      border-color: #3f8cf2;
+    }
   }
 `;
 
@@ -57,7 +78,8 @@ interface IForm {
 }
 
 function Board({ toDos, boardId }: IBoardProps) {
-  const setToDos = useSetRecoilState(toDoState);
+  const allBoards = useRecoilValue(toDoSelector);
+  const setToDos = useSetRecoilState(toDoSelector);
   const { register, setValue, handleSubmit } = useForm<IForm>();
   const onValid = ({ toDo }: IForm) => {
     const newToDo = {
@@ -65,13 +87,37 @@ function Board({ toDos, boardId }: IBoardProps) {
       text: toDo,
     };
     setToDos((allBoards) => {
-      return { ...allBoards, [boardId]: [newToDo, ...allBoards[boardId]] };
+      const newBoards = [...allBoards];
+      const boardIndex = newBoards.findIndex((board) => board.id === boardId);
+
+      const newToDos = [newToDo, ...newBoards[boardIndex].toDos];
+      const newBoard = { id: boardId, toDos: newToDos };
+
+      newBoards.splice(boardIndex, 1);
+      newBoards.splice(boardIndex, 0, newBoard);
+
+      return newBoards;
     });
     setValue("toDo", "");
   };
+  const onBoardCloseClick = (boardId: string) => {
+    setToDos((allBoards) => {
+      const newBoards = [...allBoards];
+      const boardIndex = newBoards.findIndex((board) => board.id === boardId);
+      newBoards.splice(boardIndex, 1);
+      return newBoards;
+    });
+  };
   return (
     <Wrapper>
-      <Title>{boardId}</Title>
+      <Title>
+        {boardId}
+        <em
+          onClick={() => {
+            onBoardCloseClick(boardId);
+          }}
+        ></em>
+      </Title>
       <Form onSubmit={handleSubmit(onValid)}>
         <input {...register("toDo", { required: true })} type='text' placeholder={`Add task on ${boardId}`} />
       </Form>
