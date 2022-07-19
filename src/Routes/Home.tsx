@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useQuery } from "react-query";
+import { useHistory, useRouteMatch } from "react-router-dom";
 import styled from "styled-components";
 import { getMovies, IGetMoviesResult } from "../api";
 import { makeImagePath } from "../utils";
@@ -24,12 +25,13 @@ const Banner = styled.div<{ bgPhoto: string }>`
   padding: 60px;
   background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)), url(${(props) => props.bgPhoto});
   background-size: cover;
+  background-position: top center;
 `;
 
 const Title = styled.h2`
   font-size: 50px;
   margin-bottom: 20px;
-  /* letter-spacing: -0.2em; */
+  letter-spacing: -0.1em;
 `;
 
 const Overview = styled.p`
@@ -43,7 +45,7 @@ const Overview = styled.p`
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* letter-spacing: -0.05em; */
+  letter-spacing: -0.05em;
 `;
 
 const Slider = styled.div`
@@ -64,13 +66,15 @@ const Box = styled(motion.div)<{ bgPhoto: string }>`
   background-image: url(${(props) => props.bgPhoto});
   background-size: cover;
   background-position: center center;
-  height: 200px;
+  aspect-ratio: 25/14;
   font-size: 66px;
+  transform-origin: bottom center;
+  cursor: pointer;
   &:first-child {
-    transform-origin: center left;
+    transform-origin: bottom left;
   }
   &:last-child {
-    transform-origin: center right;
+    transform-origin: bottom right;
   }
 `;
 
@@ -83,7 +87,8 @@ const Info = styled(motion.div)`
   position: absolute;
   h4 {
     text-align: center;
-    font-size: 18px;
+    font-size: 14px;
+    letter-spacing: -0.05em;
   }
 `;
 
@@ -99,7 +104,7 @@ const boxVariants = {
   },
   hover: {
     scale: 1.3,
-    y: -80,
+    // y: -40,
     transition: {
       type: "tween",
       delay: 0.2,
@@ -116,8 +121,11 @@ const infoVariants = {
 };
 
 function Home() {
+  const history = useHistory();
+  const bigMovieMatch = useRouteMatch<{ movieId: string }>("/movies/:movieId");
   const { data, isLoading } = useQuery<IGetMoviesResult>(["movies", "nowPlaying"], getMovies);
   const [index, setIndex] = useState(0);
+  const offset = 6;
   const increaseIndex = () => {
     if (data) {
       if (leaving) return;
@@ -129,8 +137,9 @@ function Home() {
   };
   const [leaving, setLeaving] = useState(false);
   const toggleLeaving = () => setLeaving((prev) => !prev);
-
-  const offset = 6;
+  const onBoxClicked = (movieId: number) => {
+    history.push(`/movies/${movieId}`);
+  };
   return (
     <Wrapper>
       {isLoading ? (
@@ -156,12 +165,14 @@ function Home() {
                   .slice(offset * index, offset * index + offset)
                   .map((movie) => (
                     <Box
+                      layoutId={`movieBox_${movie.id}`}
                       key={movie.id}
                       variants={boxVariants}
                       whileHover='hover'
                       initial='normal'
                       transition={{ type: "tween" }}
                       bgPhoto={makeImagePath(movie.backdrop_path, "w500")}
+                      onClick={() => onBoxClicked(movie.id)}
                     >
                       <Info variants={infoVariants}>
                         <h4>{movie.title}</h4>
@@ -171,6 +182,23 @@ function Home() {
               </Row>
             </AnimatePresence>
           </Slider>
+          <AnimatePresence>
+            {bigMovieMatch && (
+              <motion.div
+                layoutId={`movieBox_${bigMovieMatch.params.movieId}`}
+                style={{
+                  position: "absolute",
+                  width: "40vw",
+                  height: "80vh",
+                  backgroundColor: "red",
+                  top: 50,
+                  left: 0,
+                  right: 0,
+                  margin: "0 auto",
+                }}
+              ></motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </Wrapper>
